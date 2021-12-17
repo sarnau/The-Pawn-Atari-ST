@@ -1,6 +1,7 @@
 import sys
 import struct
 import binascii
+from PIL import Image, ImageDraw
 
 for imageIndex in range(2,33):
 	data = open('./Generated Floppy Files/FILE%d.BIN' % imageIndex,'rb').read()
@@ -18,7 +19,7 @@ for imageIndex in range(2,33):
 	paletteOffset = offset
 	colors = []
 	for color in struct.unpack('>16H', data[paletteOffset:paletteOffset+16*2]):
-		colors.append('%03x' % color)
+		colors.append((int(((color >> 8) & 0xF)/7*255), int(((color >> 4) & 0xF)/7*255), int(((color >> 0) & 0xF)/7*255)))
 	offset += struct.calcsize('>16H')
 	#print('Colors',colors)
 	tableSize,streamSize = struct.unpack('>HL', data[offset:offset+2+4])
@@ -91,7 +92,31 @@ for imageIndex in range(2,33):
 			nibbleBitmap[x + (y + 1) * 160] ^= nibbleBitmap[x + y * 160]
 	# we now have a 320x200 pixel image with 4-bit (16 colors) per pixel
 
-	# build the Atari bitmpa to be stored as a PI0 file
+	if imageIndex == 32: # the title has one palette per line
+		# 200 color palettes (one for each line) are stored at the very end of the main application
+		palettes = open('./The Pawn/THE_PAWN.PRG' ,'rb').read()[-16*2*200:]
+		lineColors = []
+		for paletteOffset in range(0,len(palettes),32):
+			colors = []
+			for color in struct.unpack('>16H', palettes[paletteOffset:paletteOffset+32]):
+				colors.append((int(((color >> 8) & 0xF)/7*255), int(((color >> 4) & 0xF)/7*255), int(((color >> 0) & 0xF)/7*255)))
+			lineColors.append(colors)
+	img = Image.new('RGB', (320, 200), color = 'white')
+	draw = ImageDraw.Draw(img)
+	for y in range(0,200):
+		for x in range(0,320):
+			bb = nibbleBitmap[(x >> 1) + y * 160]
+			if (x & 1) == 0:
+				color = (bb >> 4) & 0xF
+			else:
+				color = bb & 0xF
+			if imageIndex == 32: # the title has one palette per line
+				draw.point([(x,y)], lineColors[y][color])
+			else:
+				draw.point([(x,y)], colors[color])
+	img.save('./AtariImages/file%d.png' % imageIndex)
+		
+	# build the Atari bitmap to be stored as a PI0 file
 	atariBitmap = bytearray()
 	for y in range(0,200):
 		for x in range(0,160,8):
@@ -133,4 +158,4 @@ for imageIndex in range(2,33):
 		degasImage += data[paletteOffset:paletteOffset+16*2]
 		degasImage += atariBitmap
 		open('./AtariImages/FILE%d.PI1' % imageIndex,'wb').write(degasImage)
-	
+		
