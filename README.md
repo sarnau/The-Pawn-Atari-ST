@@ -18,7 +18,7 @@ A version loadable from harddisk with all manuals as PDFs is available in the `T
 
 The disc is considered a stream of bytes and addressed via an `offset`. 0 is the beginning. 401316 is the first unused byte on "The Pawn 2.1" for the Atari ST.
 
-The `offset` is divided by 5120 ($1400) to get the `track` number. Each `sector` (0..4) is 1024 ($400) bytes large. Within that `sector` it is a simple `byte offset` of the reminder.
+The `offset` is divided by 5120 ($1400) to get the `track` number. Each `sector` (0..4) is 1024 ($400) bytes large. Within that `sector` it is a simple `byte offset` of the remainder.
 
 The track (physical track and logic track number in the sector header) and the sector numbers are calculated based on a simple scheme:
 
